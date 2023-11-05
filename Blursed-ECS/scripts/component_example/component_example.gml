@@ -1,22 +1,21 @@
-COMPONENT_NAME example
-COMPONENT_START
-	INIT = function()
+//Example Component
+ECS_DEFINE
+define_component("example",
+function()
+{
+	my_string = "Hello world!";
+	is_activated = false;
+},
+function()
+{
+	if (!is_activated)
 	{
-		my_string = "Hello world!";
-		is_activated = false;
+		show_debug_message(my_string);
+		is_activated = true;
 	}
-	
-	STEP = function()
-	{
-		if (!is_activated)
-		{
-			show_debug_message(my_string);
-			is_activated = true;
-		}
-	}
-	
-	DRAW = function()
-	{
-		draw_text(x, y, my_string);
-	}
-COMPONENT_END
+},
+function()
+{
+	draw_text(x, y, my_string);
+});
+ECS_DEFINE_END
