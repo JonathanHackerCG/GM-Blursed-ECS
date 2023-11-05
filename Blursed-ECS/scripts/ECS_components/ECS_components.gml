@@ -1,24 +1,41 @@
 #region Cursed Macros - DEFINE
-#macro _ECS_DEFINE if (!variable_global_exists("__ECS_definitions"))\
+#macro ECS_DEFINE if (!variable_global_exists("__ECS_definitions"))\
 							{ global.__ECS_definitions = ds_priority_create(); }\
-							ds_priority_add(global.__ECS_definitions, 
+							ds_priority_add(global.__ECS_definitions, function() {
 //Feather ignore GM1051
-#macro _ECS_END_DEFINE );
+#macro ECS_DEFINE_END }, 0 );
 #endregion
-#region Cursed Macros - COMPONENT
-#macro COMPONENT_NAME _ECS_DEFINE function() {\
-	var _component = new Component();\
-	COMPONENT.
-#macro COMPONENT_START = _component;\
-	with (_component) {
-#macro COMPONENT_END } }, 0, _ECS_END_DEFINE
-#endregion
-#region Component(); constructor
-function Component() constructor
+
+#macro COMPONENT global.__ECS_components
+#region Component(name); constructor
+/// @func Component(name):
+/// @desc Constructor that creates a new Component.
+/// @arg	{String} name
+/// @returns {Struct.Component}
+function Component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefined) constructor
 {
-	INIT = undefined;
-	STEP = undefined;
-	DRAW = undefined;
+	INIT = _INIT;
+	STEP = _STEP;
+	DRAW = _DRAW;
+	
+	if (!variable_global_exists("__ECS_components"))
+	{
+		show_error("Blursed ECS - Potentially attempting to define a Component before calling ECS_initialize().\nPlease guarantee a safe definition call, or use ECS_DEFINE and ECS_DEFINE_END.", true);
+	}
+	variable_struct_set(COMPONENT, _name, self);
+}
+#endregion
+#region define_component(name);
+/// @func define_component(name):
+/// @desc Define a new Component.
+/// @arg	{String} name
+/// @arg	{Function} INIT
+/// @arg	{Function} STEP
+/// @arg	{Function} DRAW
+/// @returns {Struct.Component}
+function define_component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefined)
+{
+	return new Component(_name, _INIT, _STEP, _DRAW);
 }
 #endregion
 
@@ -27,18 +44,20 @@ function Component() constructor
 /// @desc Called once at start of the game to initialize the ECS.
 function ECS_initialize()
 {
-	//Creating the COMPONENT "namespace".
-	if (!instance_exists(COMPONENT))
+	if (!variable_global_exists("__ECS_components"))
 	{
-		instance_create_depth(0, 0, 0, COMPONENT);
+		COMPONENT = {};
 	}
 	
 	//Defining components.
-	do
+	if (variable_global_exists("__ECS_definitions"))
 	{
-		ds_priority_delete_max(global.__ECS_definitions)();
-	} until (ds_priority_empty(global.__ECS_definitions));
-	ds_priority_destroy(global.__ECS_definitions);
+		do
+		{
+			ds_priority_delete_max(global.__ECS_definitions)();
+		} until (ds_priority_empty(global.__ECS_definitions));
+		ds_priority_destroy(global.__ECS_definitions);
+	}
 }
 #endregion
 

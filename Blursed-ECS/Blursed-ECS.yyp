@@ -11,8 +11,8 @@
   },
   "defaultScriptType": 1,
   "Folders": [
-    {"resourceType":"GMFolder","resourceVersion":"1.0","name":"Blursed ECS","folderPath":"folders/Blursed ECS.yy",},
     {"resourceType":"GMFolder","resourceVersion":"1.0","name":"Blursed ECS - Example","folderPath":"folders/Blursed ECS - Example.yy",},
+    {"resourceType":"GMFolder","resourceVersion":"1.0","name":"Blursed ECS","folderPath":"folders/Blursed ECS.yy",},
   ],
   "IncludedFiles": [],
   "isEcma": false,
@@ -25,7 +25,6 @@
     {"id":{"name":"rm_main","path":"rooms/rm_main/rm_main.yy",},},
     {"id":{"name":"ECS_ENTITY","path":"objects/ECS_ENTITY/ECS_ENTITY.yy",},},
     {"id":{"name":"component_template","path":"scripts/component_template/component_template.yy",},},
-    {"id":{"name":"COMPONENT","path":"objects/COMPONENT/COMPONENT.yy",},},
     {"id":{"name":"ECS_components","path":"scripts/ECS_components/ECS_components.yy",},},
     {"id":{"name":"obj_example_initialize","path":"objects/obj_example_initialize/obj_example_initialize.yy",},},
     {"id":{"name":"obj_example_entity","path":"objects/obj_example_entity/obj_example_entity.yy",},},
