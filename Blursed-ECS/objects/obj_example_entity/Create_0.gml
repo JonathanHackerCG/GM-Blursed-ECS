@@ -1,3 +1,3 @@
 /// @desc obj_example: Create
 
-component_add(COMPONENT.example);
+component_add(choose(COMPONENT.example1, COMPONENT.example2));

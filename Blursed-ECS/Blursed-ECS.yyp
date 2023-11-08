@@ -24,7 +24,6 @@
     {"id":{"name":"component_example","path":"scripts/component_example/component_example.yy",},},
     {"id":{"name":"rm_main","path":"rooms/rm_main/rm_main.yy",},},
     {"id":{"name":"ECS_ENTITY","path":"objects/ECS_ENTITY/ECS_ENTITY.yy",},},
-    {"id":{"name":"component_template","path":"scripts/component_template/component_template.yy",},},
     {"id":{"name":"ECS_components","path":"scripts/ECS_components/ECS_components.yy",},},
     {"id":{"name":"obj_example_initialize","path":"objects/obj_example_initialize/obj_example_initialize.yy",},},
     {"id":{"name":"obj_example_entity","path":"objects/obj_example_entity/obj_example_entity.yy",},},

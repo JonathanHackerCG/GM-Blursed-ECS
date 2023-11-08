@@ -14,14 +14,36 @@
 /// @returns {Struct.Component}
 function Component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefined) constructor
 {
+	static _ids = 0;
+	#region get_id();
+	_id = ++_ids;
+	/// @func get_id();
+	/// @desc Returns the ID of the Component.
+	/// @returns {Real}
+	static get_id = function()
+	{
+		return _id;
+	}
+	#endregion
+	
 	INIT = _INIT;
 	STEP = _STEP;
 	DRAW = _DRAW;
 	
+	#region Error checking.
 	if (!variable_global_exists("__ECS_components"))
 	{
 		show_error("Blursed ECS - Potentially attempting to define a Component before calling ECS_initialize().\nPlease guarantee a safe definition call, or use ECS_DEFINE and ECS_DEFINE_END.", true);
+		exit;
 	}
+	if (variable_struct_exists(COMPONENT, _name))
+	{
+		show_error("Blursed ECS - A component already exists with the name '" + _name + "'.", false);
+		exit;
+	}
+	#endregion
+	
+	//Registering the new Component.
 	variable_struct_set(COMPONENT, _name, self);
 }
 #endregion
