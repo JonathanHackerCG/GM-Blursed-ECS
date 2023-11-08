@@ -14,8 +14,8 @@
 /// @returns {Struct.Component}
 function Component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefined) constructor
 {
-	static _ids = 0;
 	#region get_id();
+	static _ids = 0;
 	_id = ++_ids;
 	/// @func get_id();
 	/// @desc Returns the ID of the Component.
@@ -25,12 +25,12 @@ function Component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefine
 		return _id;
 	}
 	#endregion
-	
+	#region Events
 	INIT = _INIT;
 	STEP = _STEP;
 	DRAW = _DRAW;
-	
-	#region Error checking.
+	#endregion
+	#region Error Checking
 	if (!variable_global_exists("__ECS_components"))
 	{
 		show_error("Blursed ECS - Potentially attempting to define a Component before calling ECS_initialize().\nPlease guarantee a safe definition call, or use ECS_DEFINE and ECS_DEFINE_END.", true);
@@ -82,7 +82,6 @@ function ECS_initialize()
 	}
 }
 #endregion
-
 #region ECS_init_entity();
 /// @func ECS_init_entity():
 /// @desc Called once by an entity to provide required ECS variables.
@@ -92,6 +91,7 @@ function ECS_init_entity()
 	_ECS_initialized = true;
 	_ECS_step = []; _ECS_step_num = 0;
 	_ECS_draw = []; _ECS_draw_num = 0;
+	_ECS_components = [];
 }
 #endregion
 #region ECS_step();
@@ -125,14 +125,16 @@ function ECS_draw()
 
 #region component_add(component);
 /// @func component_add(component):
-/// @desc Adds a component to an entity.
-/// @arg	{Function} component Use syntax "COMPONENT.name".
+/// @desc Attaches a component to an Entity.
+/// @arg	{Struct.Component} component Use syntax "COMPONENT.name".
 function component_add(_component)
 {
 	if (!variable_instance_exists(id, "_ECS_initialized"))
 	{
 		ECS_init_entity();
 	}
+	if (component_attached(_component)) { exit; }
+	
 	if (is_callable(_component.INIT))
 	{
 		method(id, _component.INIT)();
@@ -147,5 +149,15 @@ function component_add(_component)
 		array_push(_ECS_draw, method(id, _component.DRAW));
 		_ECS_draw_num++;
 	}
+	array_push(_ECS_components, _component.get_id());
+}
+#endregion
+#region component_attached(component);
+/// @func component_attached(component):
+/// @desc Returns true/false if an Entity has a Component.
+/// @arg	{Struct.Component} component
+function component_attached(_component)
+{
+	return array_contains(_ECS_components, _component.get_id());
 }
 #endregion
