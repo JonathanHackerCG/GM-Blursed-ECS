@@ -11,25 +11,13 @@
 /// @func Component(name):
 /// @desc Constructor that creates a new Component.
 /// @arg	{String} name
+/// @arg	{Function} INIT
+/// @arg	{Function} STEP
+/// @arg	{Function} DRAW
+/// @arg	{Function} CLEAN
 /// @returns {Struct.Component}
-function Component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefined) constructor
+function Component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefined, _CLEAN = undefined) constructor
 {
-	#region get_id();
-	static _ids = 0;
-	_id = ++_ids;
-	/// @func get_id();
-	/// @desc Returns the ID of the Component.
-	/// @returns {Real}
-	static get_id = function()
-	{
-		return _id;
-	}
-	#endregion
-	#region Events
-	INIT = _INIT;
-	STEP = _STEP;
-	DRAW = _DRAW;
-	#endregion
 	#region Error Checking
 	if (!variable_global_exists("__ECS_components"))
 	{
@@ -43,21 +31,51 @@ function Component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefine
 	}
 	#endregion
 	
+	#region get_id();
+	static _ids = 0;
+	_id = _ids++;
+	/// @func get_id():
+	/// @desc Returns the ID of the Component.
+	/// @returns {Real}
+	static get_id = function()
+	{
+		return _id;
+	}
+	#endregion
+	#region get_name();
+	self._name = _name;
+	/// @func get_name():
+	/// @desc Returns the name of the Component.
+	/// @returns {String}
+	static get_name = function()
+	{
+		return _name;
+	}
+	#endregion
+	#region Events
+	INIT  = _INIT;
+	STEP  = _STEP;
+	DRAW  = _DRAW;
+	CLEAN = _CLEAN;
+	#endregion
+	
 	//Registering the new Component.
 	variable_struct_set(COMPONENT, _name, self);
+	array_push(COMPONENT.LIST, self);
 }
 #endregion
 #region define_component(name);
 /// @func define_component(name):
 /// @desc Define a new Component.
 /// @arg	{String} name
-/// @arg	{Function} INIT
-/// @arg	{Function} STEP
-/// @arg	{Function} DRAW
+/// @arg	{Function} INIT	 Called when component is added.
+/// @arg	{Function} STEP  Called in Step event.
+/// @arg	{Function} DRAW  Called in Draw event.
+/// @arg	{Function} CLEAN Called in Clean Up event, or when component is removed.
 /// @returns {Struct.Component}
-function define_component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefined)
+function define_component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefined, _CLEAN = undefined)
 {
-	return new Component(_name, _INIT, _STEP, _DRAW);
+	return new Component(_name, _INIT, _STEP, _DRAW, _CLEAN);
 }
 #endregion
 
@@ -69,6 +87,7 @@ function ECS_initialize()
 	if (!variable_global_exists("__ECS_components"))
 	{
 		COMPONENT = {};
+		COMPONENT.LIST = [];
 	}
 	
 	//Defining components.
@@ -89,8 +108,9 @@ function ECS_initialize()
 function ECS_init_entity()
 {
 	_ECS_initialized = true;
-	_ECS_step = []; _ECS_step_num = 0;
-	_ECS_draw = []; _ECS_draw_num = 0;
+	_ECS_step  = []; _ECS_step_num  = 0;
+	_ECS_draw  = []; _ECS_draw_num  = 0;
+	_ECS_clean = []; _ECS_clean_num = 0;
 	_ECS_components = [];
 }
 #endregion
@@ -122,6 +142,20 @@ function ECS_draw()
 	}
 }
 #endregion
+#region ECS_clean();
+/// @func ECS_clean():
+/// @desc Calls the CLEAN component functions. Should be called in the Clean Up event.
+function ECS_clean()
+{
+	if (_ECS_clean_num > 0)
+	{
+		for (var i = 0; i < _ECS_clean_num; i++)
+		{
+			_ECS_clean[i]();
+		}
+	}
+}
+#endregion
 
 #region component_add(component);
 /// @func component_add(component):
@@ -149,6 +183,11 @@ function component_add(_component)
 		array_push(_ECS_draw, method(id, _component.DRAW));
 		_ECS_draw_num++;
 	}
+	if (is_callable(_component.CLEAN))
+	{
+		array_push(_ECS_clean, method(id, _component.CLEAN));
+		_ECS_clean_num++;
+	}
 	array_push(_ECS_components, _component.get_id());
 }
 #endregion
@@ -159,5 +198,32 @@ function component_add(_component)
 function component_attached(_component)
 {
 	return array_contains(_ECS_components, _component.get_id());
+}
+#endregion
+
+#region components_count();
+/// @func components_count():
+/// @desc Returns the number of attached Components.
+/// @returns {Real}
+function components_count()
+{
+	return array_length(_ECS_components);
+}
+#endregion
+#region components_list();
+/// @func components_list();
+/// @desc Returns an array of all attached Components as structs.
+/// This function is primarily for debugging purposes.
+/// @returns {Array}
+function components_list()
+{
+	var _size = components_count();
+	var _output = [];
+	for (var i = 0; i < _size; i++)
+	{
+		var _id = _ECS_components[i];
+		array_push(_output, COMPONENT.LIST[_id]);
+	}
+	return _output;
 }
 #endregion

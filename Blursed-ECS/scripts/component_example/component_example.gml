@@ -1,42 +1,48 @@
 //Example Component
 ECS_DEFINE
-define_component("example1",
+define_component("SayHello",
 function()
 {
-	my_string1 = "Hello world 1!";
-	is_activated1 = false;
+	my_message = "Hello!";
+	is_activated = false;
 },
 function()
 {
-	if (!is_activated1)
+	if (!is_activated)
 	{
-		show_debug_message(my_string1);
-		is_activated1 = true;
+		show_debug_message(my_message);
+		is_activated = true;
 	}
-},
-function()
-{
-	draw_text(x, y, my_string1);
 });
 ECS_DEFINE_END
 
 ECS_DEFINE
-define_component("example2",
-function()
+define_component("DestroyPressK",,
+function() //STEP
 {
-	my_string2 = "\nHello world 2!";
-	is_activated2 = false;
-},
-function()
-{
-	if (!is_activated2)
+	if (keyboard_check_pressed(ord("K")))
 	{
-		show_debug_message(my_string2);
-		is_activated2 = true;
+		instance_destroy(id, true);
 	}
-},
-function()
+},,
+function() //CLEAN
 {
-	draw_text(x, y, my_string2);
+	show_debug_message("Cleaned Up!");
+});
+ECS_DEFINE_END
+
+ECS_DEFINE
+define_component("ListComponents",,,
+function() //DRAW
+{
+	var _size = components_count();
+	var _components = components_list();
+	var _output = "Components:\n";
+	for (var i = 0; i < _size; i++)
+	{
+		var _component = _components[i];
+		_output += "-" + _component.get_name() + "\n";
+	}
+	draw_text(x, y, _output);
 });
 ECS_DEFINE_END
