@@ -158,7 +158,7 @@ function ECS_draw()
 	{
 		for (var i = 0; i < _size; i++)
 		{
-			_ECS_draw_copy[i]();
+			_ECS_draw_copy[i]._method();
 		}
 	}
 }
@@ -179,7 +179,7 @@ function ECS_clean()
 	{
 		for (var i = 0; i < _size; i++)
 		{
-			_ECS_clean_copy[i]();
+			_ECS_clean_copy[i]._method();
 		}
 	}
 }
@@ -212,12 +212,18 @@ function component_add(_component)
 	}
 	if (is_callable(_component.DRAW))
 	{
-		array_push(_ECS_draw_main, method(id, _component.DRAW));
+		array_push(_ECS_draw_main, {
+			_id : _component_id,
+			_method : method(id, _component.DRAW)
+		});
 		_ECS_draw_num++; _ECS_draw_init = true;
 	}
 	if (is_callable(_component.CLEAN))
 	{
-		array_push(_ECS_clean_main, method(id, _component.CLEAN));
+		array_push(_ECS_clean_main, {
+			_id : _component_id,
+			_method : method(id, _component.CLEAN)
+		});
 		_ECS_clean_num++; _ECS_clean_init = true;
 	}
 	array_push(_ECS_components, _component.get_id());
@@ -256,21 +262,26 @@ function component_remove(_component)
 	}
 	if (is_callable(_component.DRAW))
 	{
-		_index = array_get_index(_ECS_draw, method(id, _component.DRAW));
-		if (_index != -1)
+		for (var i = 0; i < _ECS_draw_num; i++)
 		{
-			array_delete(_ECS_draw_main, _index, 1);
-			_ECS_draw_num--; _ECS_draw_init = true;
+			if (_ECS_draw_main[i]._id == _component_id)
+			{
+				array_delete(_ECS_draw_main, i, 1);
+				_ECS_draw_num--; _ECS_draw_init = true;
+				break;
+			}
 		}
 	}
 	if (is_callable(_component.CLEAN))
 	{
-		method(id, _component.CLEAN)();
-		_index = array_get_index(_ECS_clean, method(id, _component.CLEAN));
-		if (_index != -1)
+		for (var i = 0; i < _ECS_clean_num; i++)
 		{
-			array_delete(_ECS_clean_main, _index, 1);
-			_ECS_clean_num--; _ECS_clean_init = true;
+			if (_ECS_clean_main[i]._id == _component_id)
+			{
+				array_delete(_ECS_clean_main, i, 1);
+				_ECS_clean_num--; _ECS_clean_init = true;
+				break;
+			}
 		}
 	}
 	_index = array_get_index(_ECS_components, _component.get_id());
