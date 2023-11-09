@@ -107,11 +107,18 @@ function ECS_initialize()
 /// Also called automatically by component_add if necessary.
 function ECS_init_entity()
 {
+	static _init_event_variables = function(_name)
+	{
+		variable_instance_set(id, "_ECS_" + _name + "_main", []);
+		variable_instance_set(id, "_ECS_" + _name + "_copy", []);
+		variable_instance_set(id, "_ECS_" + _name + "_init", false);
+		variable_instance_set(id, "_ECS_" + _name + "_num", 0);
+	}
 	_ECS_initialized = true;
-	_ECS_step  = []; _ECS_step_num  = 0;
-	_ECS_draw  = []; _ECS_draw_num  = 0;
-	_ECS_clean = []; _ECS_clean_num = 0;
 	_ECS_components = [];
+	method(id, _init_event_variables)("step");
+	method(id, _init_event_variables)("draw");
+	method(id, _init_event_variables)("clean");
 }
 #endregion
 #region ECS_step();
@@ -119,11 +126,18 @@ function ECS_init_entity()
 /// @desc Calls the STEP component functions. Should be called in an update event like Step.
 function ECS_step()
 {
-	if (_ECS_step_num > 0)
+	var _size = _ECS_step_num;
+	if (_ECS_step_init)
 	{
-		for (var i = 0; i < _ECS_step_num; i++)
+		array_copy(_ECS_step_copy, 0, _ECS_step_main, 0, _size);
+		_ECS_step_init = false;
+	}
+	
+	if (_size > 0)
+	{
+		for (var i = 0; i < _size; i++)
 		{
-			_ECS_step[i]();
+			_ECS_step_copy[i]._method();
 		}
 	}
 }
@@ -133,11 +147,18 @@ function ECS_step()
 /// @desc Calls the DRAW component functions. Should be called in a draw event like Draw.
 function ECS_draw()
 {
-	if (_ECS_draw_num > 0)
+	var _size = _ECS_draw_num;
+	if (_ECS_draw_init)
 	{
-		for (var i = 0; i < _ECS_draw_num; i++)
+		array_copy(_ECS_draw_copy, 0, _ECS_draw_main, 0, _size);
+		_ECS_draw_init = false;
+	}
+	
+	if (_size > 0)
+	{
+		for (var i = 0; i < _size; i++)
 		{
-			_ECS_draw[i]();
+			_ECS_draw_copy[i]();
 		}
 	}
 }
@@ -147,11 +168,18 @@ function ECS_draw()
 /// @desc Calls the CLEAN component functions. Should be called in the Clean Up event.
 function ECS_clean()
 {
-	if (_ECS_clean_num > 0)
+	var _size = _ECS_clean_num;
+	if (_ECS_clean_init)
 	{
-		for (var i = 0; i < _ECS_clean_num; i++)
+		array_copy(_ECS_clean_copy, 0, _ECS_clean_main, 0, _size);
+		_ECS_clean_init = false;
+	}
+	
+	if (_size > 0)
+	{
+		for (var i = 0; i < _size; i++)
 		{
-			_ECS_clean[i]();
+			_ECS_clean_copy[i]();
 		}
 	}
 }
@@ -159,8 +187,8 @@ function ECS_clean()
 
 #region component_add(component);
 /// @func component_add(component):
-/// @desc Attaches a component to an Entity.
-/// @arg	{Struct.Component} component Use syntax "COMPONENT.name".
+/// @desc Attaches a Component to an Entity.
+/// @arg	{Struct.Component} component Syntax: COMPONENT.<name>
 function component_add(_component)
 {
 	if (!variable_instance_exists(id, "_ECS_initialized"))
@@ -168,6 +196,7 @@ function component_add(_component)
 		ECS_init_entity();
 	}
 	if (component_attached(_component)) { exit; }
+	var _component_id = _component.get_id();
 	
 	if (is_callable(_component.INIT))
 	{
@@ -175,18 +204,21 @@ function component_add(_component)
 	}
 	if (is_callable(_component.STEP))
 	{
-		array_push(_ECS_step, method(id, _component.STEP));
-		_ECS_step_num++;
+		array_push(_ECS_step_main, {
+			_id : _component_id,
+			_method : method(id, _component.STEP)
+		});
+		_ECS_step_num++; _ECS_step_init = true;
 	}
 	if (is_callable(_component.DRAW))
 	{
-		array_push(_ECS_draw, method(id, _component.DRAW));
-		_ECS_draw_num++;
+		array_push(_ECS_draw_main, method(id, _component.DRAW));
+		_ECS_draw_num++; _ECS_draw_init = true;
 	}
 	if (is_callable(_component.CLEAN))
 	{
-		array_push(_ECS_clean, method(id, _component.CLEAN));
-		_ECS_clean_num++;
+		array_push(_ECS_clean_main, method(id, _component.CLEAN));
+		_ECS_clean_num++; _ECS_clean_init = true;
 	}
 	array_push(_ECS_components, _component.get_id());
 }
@@ -194,10 +226,55 @@ function component_add(_component)
 #region component_attached(component);
 /// @func component_attached(component):
 /// @desc Returns true/false if an Entity has a Component.
-/// @arg	{Struct.Component} component
+/// @arg	{Struct.Component} component Syntax: COMPONENT.<name>
 function component_attached(_component)
 {
 	return array_contains(_ECS_components, _component.get_id());
+}
+#endregion
+#region component_remove(component);
+/// @func component_remove(component):
+/// @desc Removes a Component from an Entity.
+/// @arg	{Struct.Component} component Syntax: COMPONENT.<name>
+function component_remove(_component)
+{
+	if (!component_attached(_component)) { exit; }
+	
+	var _index = -1;
+	var _component_id = _component.get_id();
+	if (is_callable(_component.STEP))
+	{
+		for (var i = 0; i < _ECS_step_num; i++)
+		{
+			if (_ECS_step_main[i]._id == _component_id)
+			{
+				array_delete(_ECS_step_main, i, 1);
+				_ECS_step_num--; _ECS_step_init = true;
+				break;
+			}
+		}
+	}
+	if (is_callable(_component.DRAW))
+	{
+		_index = array_get_index(_ECS_draw, method(id, _component.DRAW));
+		if (_index != -1)
+		{
+			array_delete(_ECS_draw_main, _index, 1);
+			_ECS_draw_num--; _ECS_draw_init = true;
+		}
+	}
+	if (is_callable(_component.CLEAN))
+	{
+		method(id, _component.CLEAN)();
+		_index = array_get_index(_ECS_clean, method(id, _component.CLEAN));
+		if (_index != -1)
+		{
+			array_delete(_ECS_clean_main, _index, 1);
+			_ECS_clean_num--; _ECS_clean_init = true;
+		}
+	}
+	_index = array_get_index(_ECS_components, _component.get_id());
+	array_delete(_ECS_components, _index, 1);
 }
 #endregion
 

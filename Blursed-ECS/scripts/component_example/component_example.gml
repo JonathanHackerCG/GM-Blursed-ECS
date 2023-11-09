@@ -32,6 +32,32 @@ function() //CLEAN
 ECS_DEFINE_END
 
 ECS_DEFINE
+define_component("SpaceToggleA",,
+function()
+{
+	if (keyboard_check_pressed(vk_space))
+	{
+		show_debug_message("Called ToggleA");
+		component_add(COMPONENT.SpaceToggleB);
+		component_remove(COMPONENT.SpaceToggleA);
+	}
+});
+ECS_DEFINE_END
+
+ECS_DEFINE
+define_component("SpaceToggleB",,
+function()
+{
+	if (keyboard_check_pressed(vk_space))
+	{
+		show_debug_message("Called ToggleB");
+		component_remove(COMPONENT.SpaceToggleB);
+		component_add(COMPONENT.SpaceToggleA);
+	}
+});
+ECS_DEFINE_END
+
+ECS_DEFINE
 define_component("ListComponents",,,
 function() //DRAW
 {
