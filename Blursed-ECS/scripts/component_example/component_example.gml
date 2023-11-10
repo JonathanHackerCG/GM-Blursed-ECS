@@ -1,12 +1,12 @@
 //Example Component
 ECS_DEFINE
-define_component("SayHello",
-function()
+new Component("SayHello")
+.add_event("INIT",	function()
 {
 	my_message = "Hello!";
 	is_activated = false;
-},
-function()
+})
+.add_event("STEP", function()
 {
 	if (!is_activated)
 	{
@@ -17,23 +17,23 @@ function()
 ECS_DEFINE_END
 
 ECS_DEFINE
-define_component("DestroyPressK",,
-function() //STEP
+new Component("DestroyPressK")
+.add_event("STEP", function()
 {
 	if (keyboard_check_pressed(ord("K")))
 	{
 		instance_destroy(id, true);
 	}
-},,
-function() //CLEAN
+})
+.add_event("CLEAN_UP", function() //CLEAN
 {
 	show_debug_message("Cleaned Up!");
 });
 ECS_DEFINE_END
 
 ECS_DEFINE
-define_component("SpaceToggleA",,
-function()
+new Component("SpaceToggleA")
+.add_event("STEP", function()
 {
 	if (keyboard_check_pressed(vk_space))
 	{
@@ -45,8 +45,8 @@ function()
 ECS_DEFINE_END
 
 ECS_DEFINE
-define_component("SpaceToggleB",,
-function()
+new Component("SpaceToggleB")
+.add_event("STEP", function()
 {
 	if (keyboard_check_pressed(vk_space))
 	{
@@ -58,8 +58,8 @@ function()
 ECS_DEFINE_END
 
 ECS_DEFINE
-define_component("ListComponents",,,
-function() //DRAW
+new Component("ListComponents")
+.add_event("DRAW", function()
 {
 	var _size = components_count();
 	var _components = components_list();

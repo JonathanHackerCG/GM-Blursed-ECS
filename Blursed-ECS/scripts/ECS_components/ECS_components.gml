@@ -11,12 +11,8 @@
 /// @func Component(name):
 /// @desc Constructor that creates a new Component.
 /// @arg	{String} name
-/// @arg	{Function} INIT
-/// @arg	{Function} STEP
-/// @arg	{Function} DRAW
-/// @arg	{Function} CLEAN
 /// @returns {Struct.Component}
-function Component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefined, _CLEAN = undefined) constructor
+function Component(_name) constructor
 {
 	#region Error Checking
 	if (!variable_global_exists("__ECS_components"))
@@ -53,29 +49,32 @@ function Component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefine
 	}
 	#endregion
 	#region Events
-	INIT  = _INIT;
-	STEP  = _STEP;
-	DRAW  = _DRAW;
-	CLEAN = _CLEAN;
+	_EVENTS = {};
+	#region add_event(event, function);
+	/// @func add_event(event, function):
+	/// @arg	{String} event
+	/// @arg	{Function} function
+	/// @returns {Struct.Component}
+	static add_event = function(_event, _function)
+	{
+		_EVENTS[$ _event] = method(self, _function);
+		return self;
+	}
+	#endregion
+	#region get_event(event);
+	/// @func get_event(event):
+	/// @arg	{String} event
+	/// @returns {Function}
+	static get_event = function(_event)
+	{
+		return _EVENTS[$ _event];
+	}
+	#endregion
 	#endregion
 	
 	//Registering the new Component.
 	variable_struct_set(COMPONENT, _name, self);
 	array_push(COMPONENT.LIST, self);
-}
-#endregion
-#region define_component(name);
-/// @func define_component(name):
-/// @desc Define a new Component.
-/// @arg	{String} name
-/// @arg	{Function} INIT	 Called when component is added.
-/// @arg	{Function} STEP  Called in Step event.
-/// @arg	{Function} DRAW  Called in Draw event.
-/// @arg	{Function} CLEAN Called in Clean Up event, or when component is removed.
-/// @returns {Struct.Component}
-function define_component(_name, _INIT = undefined, _STEP = undefined, _DRAW = undefined, _CLEAN = undefined)
-{
-	return new Component(_name, _INIT, _STEP, _DRAW, _CLEAN);
 }
 #endregion
 
@@ -107,125 +106,92 @@ function ECS_initialize()
 /// Also called automatically by component_add if necessary.
 function ECS_init_entity()
 {
-	static _init_event_variables = function(_name)
-	{
-		variable_instance_set(id, "_ECS_" + _name + "_main", []);
-		variable_instance_set(id, "_ECS_" + _name + "_copy", []);
-		variable_instance_set(id, "_ECS_" + _name + "_init", false);
-		variable_instance_set(id, "_ECS_" + _name + "_num", 0);
-	}
-	_ECS_initialized = true;
+	_ECS_events = {};
 	_ECS_components = [];
-	method(id, _init_event_variables)("step");
-	method(id, _init_event_variables)("draw");
-	method(id, _init_event_variables)("clean");
 }
 #endregion
-#region ECS_step();
-/// @func ECS_step():
-/// @desc Calls the STEP component functions. Should be called in an update event like Step.
-function ECS_step()
+#region ECS_call_event(event);
+function ECS_call_event(_event)
 {
-	var _size = _ECS_step_num;
-	if (_ECS_step_init)
+	var _event_data = _ECS_events[$ _event];
+	if (_event_data == undefined) { exit; }
+	
+	var _size = _event_data._count;
+	if (_event_data._updated)
 	{
-		array_copy(_ECS_step_copy, 0, _ECS_step_main, 0, _size);
-		_ECS_step_init = false;
+		//Update cache of attached Components if any have been added/removed.
+		array_copy(_event_data._methods_cached, 0, _event_data._methods, 0, _size);
+		_event_data._updated = false;
 	}
 	
 	if (_size > 0)
 	{
-		for (var i = 0; i < _size; i++)
+		//Call every method for this event of the attached Component.
+		var i = 0; repeat (_size)
 		{
-			_ECS_step_copy[i]._method();
-		}
-	}
-}
-#endregion
-#region ECS_draw();
-/// @func ECS_draw():
-/// @desc Calls the DRAW component functions. Should be called in a draw event like Draw.
-function ECS_draw()
-{
-	var _size = _ECS_draw_num;
-	if (_ECS_draw_init)
-	{
-		array_copy(_ECS_draw_copy, 0, _ECS_draw_main, 0, _size);
-		_ECS_draw_init = false;
-	}
-	
-	if (_size > 0)
-	{
-		for (var i = 0; i < _size; i++)
-		{
-			_ECS_draw_copy[i]._method();
-		}
-	}
-}
-#endregion
-#region ECS_clean();
-/// @func ECS_clean():
-/// @desc Calls the CLEAN component functions. Should be called in the Clean Up event.
-function ECS_clean()
-{
-	var _size = _ECS_clean_num;
-	if (_ECS_clean_init)
-	{
-		array_copy(_ECS_clean_copy, 0, _ECS_clean_main, 0, _size);
-		_ECS_clean_init = false;
-	}
-	
-	if (_size > 0)
-	{
-		for (var i = 0; i < _size; i++)
-		{
-			_ECS_clean_copy[i]._method();
-		}
+			_event_data._methods_cached[i]._method();
+		i++; }
 	}
 }
 #endregion
 
-#region component_add(component);
-/// @func component_add(component):
+#region component_add(component, [call_INIT]);
+/// @func component_add(component, [call_INIT]):
 /// @desc Attaches a Component to an Entity.
+/// Will also call the INIT event by default.
 /// @arg	{Struct.Component} component Syntax: COMPONENT.<name>
-function component_add(_component)
+/// @arg	{Bool} [call_INIT] Default: true
+function component_add(_component, _call_INIT = true)
 {
-	if (!variable_instance_exists(id, "_ECS_initialized"))
+	//Initialize if not already initialized.
+	if (!variable_instance_exists(id, "_ECS_events"))
 	{
 		ECS_init_entity();
 	}
 	if (component_attached(_component)) { exit; }
 	var _component_id = _component.get_id();
 	
-	if (is_callable(_component.INIT))
+	//Add all event methods to this Entity.
+	var _events = struct_get_names(_component._EVENTS);
+	var _size = array_length(_events);
+	for (var i = 0; i < _size; i++)
 	{
-		method(id, _component.INIT)();
+		var _event = _events[i];
+		var _event_method = _component.get_event(_event);
+		if (is_callable(_event_method))
+		{
+			//Define a new event if one did not exist.
+			if (_ECS_events[$ _event] == undefined)
+			{
+				_ECS_events[$ _event] = {
+					_methods : [],
+					_methods_cached : [],
+					_count : 0
+				};
+			}
+			
+			//Update data for this event.
+			var _event_data = _ECS_events[$ _event];
+			array_push(_event_data._methods, {
+				_id : _component_id,
+				_method : method(id, _event_method)
+			});
+			_event_data._count++;
+			_event_data._updated = true;
+		}
 	}
-	if (is_callable(_component.STEP))
+	
+	//Special call to the initialize event.
+	if (_call_INIT)
 	{
-		array_push(_ECS_step_main, {
-			_id : _component_id,
-			_method : method(id, _component.STEP)
-		});
-		_ECS_step_num++; _ECS_step_init = true;
+		var _method_init = _component.get_event("INIT");
+		if (is_callable(_method_init))
+		{
+			method(id, _method_init)();
+		}
 	}
-	if (is_callable(_component.DRAW))
-	{
-		array_push(_ECS_draw_main, {
-			_id : _component_id,
-			_method : method(id, _component.DRAW)
-		});
-		_ECS_draw_num++; _ECS_draw_init = true;
-	}
-	if (is_callable(_component.CLEAN))
-	{
-		array_push(_ECS_clean_main, {
-			_id : _component_id,
-			_method : method(id, _component.CLEAN)
-		});
-		_ECS_clean_num++; _ECS_clean_init = true;
-	}
+	
+	//Add Component ID to attached Components.
 	array_push(_ECS_components, _component.get_id());
 }
 #endregion
@@ -238,53 +204,38 @@ function component_attached(_component)
 	return array_contains(_ECS_components, _component.get_id());
 }
 #endregion
-#region component_remove(component);
-/// @func component_remove(component):
+#region component_remove(component, [call_CLEAN_UP]);
+/// @func component_remove(component, [call_CLEAN_UP]):
 /// @desc Removes a Component from an Entity.
+/// Will also call the CLEAN event by default.
 /// @arg	{Struct.Component} component Syntax: COMPONENT.<name>
-function component_remove(_component)
+/// @arg	{Bool} [call_CLEAN_UP] Default: true
+function component_remove(_component, _call_CLEAN_UP = true)
 {
 	if (!component_attached(_component)) { exit; }
-	
-	var _index = -1;
 	var _component_id = _component.get_id();
-	if (is_callable(_component.STEP))
+	
+	//Remove all associated Component methods from the Entity.
+	var _events = struct_get_names(_component._EVENTS);
+	var _size = array_length(_events);
+	for (var i = 0; i < _size; i++)
 	{
-		for (var i = 0; i < _ECS_step_num; i++)
+		var _event = _events[i];
+		var _event_data = _ECS_events[$ _event];
+		for  (var j = 0; j < _event_data._count; j++)
 		{
-			if (_ECS_step_main[i]._id == _component_id)
+			if (_event_data._methods[j]._id == _component_id)
 			{
-				array_delete(_ECS_step_main, i, 1);
-				_ECS_step_num--; _ECS_step_init = true;
+				array_delete(_event_data._methods, j, 1);
+				_event_data._count--;
+				_event_data._updated = true;
 				break;
 			}
 		}
 	}
-	if (is_callable(_component.DRAW))
-	{
-		for (var i = 0; i < _ECS_draw_num; i++)
-		{
-			if (_ECS_draw_main[i]._id == _component_id)
-			{
-				array_delete(_ECS_draw_main, i, 1);
-				_ECS_draw_num--; _ECS_draw_init = true;
-				break;
-			}
-		}
-	}
-	if (is_callable(_component.CLEAN))
-	{
-		for (var i = 0; i < _ECS_clean_num; i++)
-		{
-			if (_ECS_clean_main[i]._id == _component_id)
-			{
-				array_delete(_ECS_clean_main, i, 1);
-				_ECS_clean_num--; _ECS_clean_init = true;
-				break;
-			}
-		}
-	}
-	_index = array_get_index(_ECS_components, _component.get_id());
+	
+	//Remove Component ID from attached Components.
+	var _index = array_get_index(_ECS_components, _component.get_id());
 	array_delete(_ECS_components, _index, 1);
 }
 #endregion
