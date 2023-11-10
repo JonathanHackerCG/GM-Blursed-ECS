@@ -250,6 +250,7 @@ function component_remove(_component, _call_CLEAN_UP = true)
 #region component_call_event(component, event);
 /// @func component_call_event(component, event):
 /// @desc Manually calls a specified event of a Component.
+/// This function is much slower than ECS_call_events for attached Components.
 /// @arg	{Struct.Component} component
 /// @arg	{String} event
 function component_call_event(_component, _event)
