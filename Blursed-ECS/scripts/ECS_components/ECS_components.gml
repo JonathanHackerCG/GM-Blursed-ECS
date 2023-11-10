@@ -110,8 +110,11 @@ function ECS_init_entity()
 	_ECS_components = [];
 }
 #endregion
-#region ECS_call_event(event);
-function ECS_call_event(_event)
+#region ECS_call_events(event);
+/// @func ECS_call_events(event):
+/// @desc Calls a specified event for all Components attached to this Entity.
+/// @arg	{String} event
+function ECS_call_events(_event)
 {
 	var _event_data = _ECS_events[$ _event];
 	if (_event_data == undefined) { exit; }
@@ -119,8 +122,12 @@ function ECS_call_event(_event)
 	var _size = _event_data._count;
 	if (_event_data._updated)
 	{
-		//Update cache of attached Components if any have been added/removed.
-		array_copy(_event_data._methods_cached, 0, _event_data._methods, 0, _size);
+		//Update cache of attached Component methods if any have been added/removed.
+		_event_data._methods_cached = [];
+		for (var i = 0; i < _size; i++)
+		{
+			array_push(_event_data._methods_cached, _event_data._methods[i]._method);
+		}
 		_event_data._updated = false;
 	}
 	
@@ -129,7 +136,7 @@ function ECS_call_event(_event)
 		//Call every method for this event of the attached Component.
 		var i = 0; repeat (_size)
 		{
-			_event_data._methods_cached[i]._method();
+			_event_data._methods_cached[i]();
 		i++; }
 	}
 }
@@ -184,11 +191,7 @@ function component_add(_component, _call_INIT = true)
 	//Special call to the initialize event.
 	if (_call_INIT)
 	{
-		var _method_init = _component.get_event("INIT");
-		if (is_callable(_method_init))
-		{
-			method(id, _method_init)();
-		}
+		component_call_event(_component, "INIT");
 	}
 	
 	//Add Component ID to attached Components.
@@ -234,9 +237,28 @@ function component_remove(_component, _call_CLEAN_UP = true)
 		}
 	}
 	
+	if (_call_CLEAN_UP)
+	{
+		component_call_event(_component, "CLEAN_UP");
+	}
+	
 	//Remove Component ID from attached Components.
 	var _index = array_get_index(_ECS_components, _component.get_id());
 	array_delete(_ECS_components, _index, 1);
+}
+#endregion
+#region component_call_event(component, event);
+/// @func component_call_event(component, event):
+/// @desc Manually calls a specified event of a Component.
+/// @arg	{Struct.Component} component
+/// @arg	{String} event
+function component_call_event(_component, _event)
+{
+	var _method_init = _component.get_event(_event);
+	if (is_callable(_method_init))
+	{
+		method(id, _method_init)();
+	}
 }
 #endregion
 
