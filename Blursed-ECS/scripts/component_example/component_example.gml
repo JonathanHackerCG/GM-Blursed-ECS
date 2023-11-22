@@ -1,5 +1,3 @@
-//Example Component
-ECS_DEFINE
 new Component("SayHello")
 .add_event("INIT",	function()
 {
@@ -14,9 +12,7 @@ new Component("SayHello")
 		is_activated = true;
 	}
 });
-ECS_DEFINE_END
 
-ECS_DEFINE
 new Component("DestroyPressK")
 .add_event("STEP", function()
 {
@@ -29,9 +25,7 @@ new Component("DestroyPressK")
 {
 	show_debug_message("Cleaned Up!");
 });
-ECS_DEFINE_END
 
-ECS_DEFINE
 new Component("SpaceToggleA")
 .add_event("STEP", function()
 {
@@ -42,9 +36,7 @@ new Component("SpaceToggleA")
 		component_remove(COMPONENT.SpaceToggleA);
 	}
 });
-ECS_DEFINE_END
 
-ECS_DEFINE
 new Component("SpaceToggleB")
 .add_event("STEP", function()
 {
@@ -55,9 +47,7 @@ new Component("SpaceToggleB")
 		component_add(COMPONENT.SpaceToggleA);
 	}
 });
-ECS_DEFINE_END
 
-ECS_DEFINE
 new Component("ListComponents")
 .add_event("DRAW", function()
 {
@@ -71,4 +61,3 @@ new Component("ListComponents")
 	}
 	draw_text(x, y, _output);
 });
-ECS_DEFINE_END

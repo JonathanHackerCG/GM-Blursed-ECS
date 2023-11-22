@@ -1,11 +1,3 @@
-#region Cursed Macros - DEFINE
-#macro ECS_DEFINE if (!variable_global_exists("__ECS_definitions"))\
-							{ global.__ECS_definitions = ds_priority_create(); }\
-							ds_priority_add(global.__ECS_definitions, function() {
-//Feather ignore GM1051
-#macro ECS_DEFINE_END }, 0 );
-#endregion
-
 #macro COMPONENT global.__ECS_components
 #region Component(name); constructor
 /// @func Component(name):
@@ -17,8 +9,8 @@ function Component(_name) constructor
 	#region Error Checking
 	if (!variable_global_exists("__ECS_components"))
 	{
-		show_error("Blursed ECS - Potentially attempting to define a Component before calling ECS_initialize().\nPlease guarantee a safe definition call, or use ECS_DEFINE and ECS_DEFINE_END.", true);
-		exit;
+		COMPONENT = {};
+		COMPONENT.LIST = [];
 	}
 	if (variable_struct_exists(COMPONENT, _name))
 	{
@@ -78,28 +70,6 @@ function Component(_name) constructor
 }
 #endregion
 
-#region ECS_initialize();
-/// @func ECS_initialize():
-/// @desc Called once at start of the game to initialize the ECS.
-function ECS_initialize()
-{
-	if (!variable_global_exists("__ECS_components"))
-	{
-		COMPONENT = {};
-		COMPONENT.LIST = [];
-	}
-	
-	//Defining components.
-	if (variable_global_exists("__ECS_definitions"))
-	{
-		do
-		{
-			ds_priority_delete_max(global.__ECS_definitions)();
-		} until (ds_priority_empty(global.__ECS_definitions));
-		ds_priority_destroy(global.__ECS_definitions);
-	}
-}
-#endregion
 #region ECS_init_entity();
 /// @func ECS_init_entity():
 /// @desc Called once by an entity to provide required ECS variables.
