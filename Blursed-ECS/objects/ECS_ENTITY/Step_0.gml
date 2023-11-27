@@ -1,2 +1,2 @@
 /// @desc ECS_ENTITY: Step
-ECS_step();
+ECS_call_events("STEP");
